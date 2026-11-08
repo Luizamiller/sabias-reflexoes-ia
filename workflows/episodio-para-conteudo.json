@@ -1,0 +1,321 @@
+{
+  "name": "Às Sábias Reflexões — Episódio para Conteúdo",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Às Sábias Reflexões — novo episódio",
+        "formDescription": "Envie o áudio do episódio. Em alguns minutos os conteúdos aparecem na planilha para revisão.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Título do episódio",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Número do episódio",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Convidado(s)",
+              "placeholder": "Nomes separados por vírgula"
+            },
+            {
+              "fieldLabel": "Áudio",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".mp3,.m4a,.wav,.webm",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Recebido! O conteúdo vai aparecer na planilha de revisão em alguns minutos."
+            }
+          }
+        }
+      },
+      "id": "f673793e-1577-5053-b584-5a8282ba1f1e",
+      "name": "Formulário: novo episódio",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "89932afd-3424-5741-a47e-6d57ced7ee30"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza a entrada do formulário e guarda o horário de início (para medir o tempo economizado)\nconst item = $input.first();\nconst f = item.json;\nconst binKeys = Object.keys(item.binary || {});\nif (!binKeys.length) throw new Error('Nenhum arquivo de áudio recebido.');\n\nconst audio = item.binary[binKeys[0]];\nconst tamanhoMB = Number(audio.fileSize ? String(audio.fileSize).replace(/[^0-9.]/g, '') : 0);\n// A API de transcrição aceita até 25 MB. Episódios longos: exporte em MP3 mono 64 kbps (~30 MB/hora → divida em partes)\nif (String(audio.fileSize || '').includes('MB') && tamanhoMB > 25) {\n  throw new Error(`Áudio com ${tamanhoMB} MB. O limite é 25 MB: exporte em MP3 mono 64 kbps ou divida o episódio.`);\n}\n\nreturn [{\n  json: {\n    titulo: f['Título do episódio'],\n    numero: f['Número do episódio'] ?? '',\n    convidados: f['Convidado(s)'] || 'Sem convidados',\n    inicio_processamento: new Date().toISOString(),\n  },\n  binary: { audio },\n}];"
+      },
+      "id": "955c63b6-2582-59d7-afac-d7691102513d",
+      "name": "Preparar entrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "audio"
+            },
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "language",
+              "value": "pt"
+            },
+            {
+              "name": "response_format",
+              "value": "verbose_json"
+            },
+            {
+              "name": "timestamp_granularities[]",
+              "value": "segment"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "e65522d3-86d0-5519-b0de-fde4eeb8df95",
+      "name": "Transcrever (Whisper)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI (preencher)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Converte os segmentos do Whisper em linhas \"[mm:ss] texto\"\nconst seg = $json.segments || [];\nconst mmss = (s) => {\n  const m = Math.floor(s / 60), r = Math.floor(s % 60);\n  return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;\n};\nconst linhas = seg.map(s => `[${mmss(s.start)}] ${s.text.trim()}`);\nconst ep = $('Preparar entrada').first().json;\n\nreturn [{\n  json: {\n    ...ep,\n    transcricao_com_timestamps: linhas.length ? linhas.join('\\n') : $json.text,\n    transcricao_texto: $json.text,\n    duracao_segundos: Math.round($json.duration || (seg.at(-1)?.end ?? 0)),\n  },\n}];"
+      },
+      "id": "574f943e-32ff-53c9-8a9b-d8804df03acd",
+      "name": "Formatar transcrição",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ✏️ Cole aqui o conteúdo de config/voz-da-marca.md\nconst VOZ_DA_MARCA = `\n[Preencha com o tema, o público e o tom do podcast — veja config/voz-da-marca.md]\n`;\n\n// Prompt v1 — mantenha sincronizado com prompts/v1-episodio-para-conteudo.md\nconst MODELO = 'claude-sonnet-5-5';\nconst PROMPT_VERSAO = 'v1';\n\nconst system = `Você é o editor de conteúdo do podcast \"Às Sábias Reflexões\".\nSua tarefa é transformar a transcrição de um episódio em materiais de divulgação prontos para revisão humana.\n\n<voz_da_marca>\n${VOZ_DA_MARCA.trim()}\n</voz_da_marca>\n\nRegras:\n1. Use SOMENTE o que está na transcrição. Nunca invente falas, dados, nomes ou histórias.\n2. Citações diretas devem ser trechos literais da transcrição.\n3. Os timestamps dos cortes devem existir na transcrição (formato [mm:ss] fornecido).\n4. Cada corte deve ter entre 30 e 90 segundos e fazer sentido sozinho, sem contexto.\n5. Escreva em português do Brasil.\n6. Se a transcrição estiver incompleta ou confusa em algum trecho, registre em \"alertas_revisao\".\n7. Responda APENAS com um objeto JSON válido, sem texto antes ou depois, seguindo o esquema.`;\n\nconst user = `<episodio>\nTítulo: ${$json.titulo}\nNúmero: ${$json.numero}\nConvidado(s): ${$json.convidados}\n</episodio>\n\n<transcricao>\n${$json.transcricao_com_timestamps}\n</transcricao>\n\nGere o JSON com este esquema:\n{\n  \"resumo_curto\": \"1 frase (até 160 caracteres) para descrição em plataformas\",\n  \"show_notes\": \"3 a 5 parágrafos com os principais temas, em ordem\",\n  \"capitulos\": [{\"inicio\": \"mm:ss\", \"titulo\": \"...\"}],\n  \"cortes\": [{\"inicio\": \"mm:ss\", \"fim\": \"mm:ss\", \"gancho\": \"frase de abertura para o vídeo\", \"por_que_funciona\": \"...\"}],\n  \"citacoes\": [\"trecho literal 1\", \"trecho literal 2\", \"trecho literal 3\"],\n  \"post_instagram\": \"...\",\n  \"post_linkedin\": \"...\",\n  \"newsletter\": {\"assunto\": \"...\", \"corpo\": \"...\"},\n  \"alertas_revisao\": [\"pontos que um humano precisa checar\"]\n}\nGere de 3 a 5 cortes e de 4 a 8 capítulos.`;\n\nreturn [{\n  json: {\n    ...$json,\n    prompt_versao: PROMPT_VERSAO,\n    requestBody: {\n      model: MODELO,\n      max_tokens: 8000,\n      system,\n      messages: [{ role: 'user', content: user }],\n    },\n  },\n}];"
+      },
+      "id": "828ada17-b161-51a5-b503-1d5f9a3ae051",
+      "name": "Montar pedido ao Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "c11514e3-09a7-515c-81bd-5170a7433ef4",
+      "name": "Claude: gerar conteúdo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        300
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "",
+          "name": "Anthropic (preencher)"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Valida o JSON do Claude, checa os timestamps contra a duração real e monta a linha da planilha\nconst ep = $('Montar pedido ao Claude').first().json;\nconst bruto = ($json.content || []).filter(b => b.type === 'text').map(b => b.text).join('');\nconst limpo = bruto.replace(/^```(?:json)?\\s*/i, '').replace(/```\\s*$/, '').trim();\n\nlet out;\ntry { out = JSON.parse(limpo); }\ncatch (e) { throw new Error('O Claude não devolveu JSON válido. Início da resposta: ' + bruto.slice(0, 300)); }\n\nconst obrigatorios = ['resumo_curto', 'show_notes', 'capitulos', 'cortes', 'citacoes', 'post_instagram', 'post_linkedin', 'newsletter'];\nconst faltando = obrigatorios.filter(k => out[k] === undefined);\nif (faltando.length) throw new Error('Campos ausentes na resposta: ' + faltando.join(', '));\n\n// Checagens automáticas (viram alertas, não bloqueiam)\nconst alertas = [...(out.alertas_revisao || [])];\nconst seg = (t) => { const [m, s] = String(t).split(':').map(Number); return m * 60 + s; };\nfor (const c of out.cortes) {\n  const ini = seg(c.inicio), fim = seg(c.fim);\n  if (isNaN(ini) || isNaN(fim) || fim <= ini) alertas.push(`Corte com horário inválido: ${c.inicio}–${c.fim}`);\n  else if (fim > ep.duracao_segundos + 5) alertas.push(`Corte ${c.inicio}–${c.fim} passa do fim do episódio`);\n  else if (fim - ini < 20 || fim - ini > 120) alertas.push(`Corte ${c.inicio}–${c.fim} com duração fora do ideal (${fim - ini}s)`);\n}\nconst textoNormal = ep.transcricao_texto.toLowerCase().replace(/\\s+/g, ' ');\nfor (const q of out.citacoes || []) {\n  const trecho = q.toLowerCase().replace(/\\s+/g, ' ').replace(/[“”\"]/g, '').slice(0, 40);\n  if (!textoNormal.includes(trecho)) alertas.push(`Citação não encontrada literalmente na transcrição: \"${q.slice(0, 60)}...\"`);\n}\n\nconst segundos = Math.round((Date.now() - new Date(ep.inicio_processamento).getTime()) / 1000);\nconst fmtLista = (arr, f) => (arr || []).map(f).join('\\n');\n\nreturn [{\n  json: {\n    'Data': new Date().toISOString().slice(0, 10),\n    'Episódio': ep.numero,\n    'Título': ep.titulo,\n    'Convidados': ep.convidados,\n    'Status': 'Aguardando revisão',\n    'Resumo curto': out.resumo_curto,\n    'Show notes': out.show_notes,\n    'Capítulos': fmtLista(out.capitulos, c => `${c.inicio} ${c.titulo}`),\n    'Cortes': fmtLista(out.cortes, c => `${c.inicio}–${c.fim} | ${c.gancho} | ${c.por_que_funciona}`),\n    'Citações': fmtLista(out.citacoes, q => `• ${q}`),\n    'Post Instagram': out.post_instagram,\n    'Post LinkedIn': out.post_linkedin,\n    'Newsletter - assunto': out.newsletter?.assunto,\n    'Newsletter - corpo': out.newsletter?.corpo,\n    'Alertas de revisão': alertas.length ? alertas.map(a => `⚠️ ${a}`).join('\\n') : 'Nenhum',\n    'Duração do episódio (min)': Math.round(ep.duracao_segundos / 60),\n    'Tempo de processamento (s)': segundos,\n    'Versão do prompt': ep.prompt_versao,\n    'Tokens (entrada/saída)': `${$json.usage?.input_tokens ?? '?'} / ${$json.usage?.output_tokens ?? '?'}`,\n    'Transcrição': ep.transcricao_com_timestamps.slice(0, 49000),\n  },\n}];"
+      },
+      "id": "af94f7d6-5c9d-5597-8083-5b7fd25b1837",
+      "name": "Validar resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "COLE_AQUI_A_URL_DA_PLANILHA"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Episodios"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "3c6a090a-718a-501f-a5fc-ca57bd79b23c",
+      "name": "Salvar para revisão (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1540,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets (preencher)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Formulário: novo episódio": {
+      "main": [
+        [
+          {
+            "node": "Preparar entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar entrada": {
+      "main": [
+        [
+          {
+            "node": "Transcrever (Whisper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcrever (Whisper)": {
+      "main": [
+        [
+          {
+            "node": "Formatar transcrição",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar transcrição": {
+      "main": [
+        [
+          {
+            "node": "Montar pedido ao Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar pedido ao Claude": {
+      "main": [
+        [
+          {
+            "node": "Claude: gerar conteúdo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: gerar conteúdo": {
+      "main": [
+        [
+          {
+            "node": "Validar resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar resposta": {
+      "main": [
+        [
+          {
+            "node": "Salvar para revisão (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

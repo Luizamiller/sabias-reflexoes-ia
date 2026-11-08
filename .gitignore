@@ -1,0 +1,18 @@
+# Segredos
+.env
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Áudios (pesados e com direitos de imagem/voz)
+*.mp3
+*.m4a
+*.wav
