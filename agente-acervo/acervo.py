@@ -5,13 +5,19 @@ sempre citando o episódio e o minuto de onde veio a informação.
 
 Fluxo (RAG simples):
   1. Carrega as transcrições de dados/transcricoes/*.txt
-  2. Divide cada episódio em trechos com timestamp
-  3. Busca os trechos mais parecidos com a pergunta (TF-IDF)
-  4. Se nada for relevante o suficiente, responde "não encontrei" SEM chamar o modelo
-  5. Caso contrário, envia os trechos ao Claude com a regra de citar a fonte
+  2. Divide cada episódio em trechos curtos com timestamp
+  3. (Opcional) O Claude reescreve a pergunta com as palavras que alguém usaria ao falar do assunto
+  4. Busca os trechos mais parecidos com a pergunta (TF-IDF com pedaços de palavras)
+  5. Se nada for relevante o suficiente, responde "não encontrei" SEM chamar o modelo
+  6. Caso contrário, envia os trechos ao Claude com a regra de citar a fonte
 
 Uso pela linha de comando:
   python acervo.py "O que foi dito sobre medo de mudar de carreira?"
+
+Histórico da busca (medido com avaliar.py — ver README):
+  v1: palavras inteiras, trechos de 6 falas, limiar 0.08
+  v2: pedaços de palavras (3 a 5 letras), trechos de 3 falas, limiar 0.12,
+      reescrita opcional da pergunta pelo Claude
 """
 from __future__ import annotations
 
@@ -19,7 +25,7 @@ import os
 import re
 import sys
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -27,17 +33,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 PASTA_TRANSCRICOES = Path(__file__).parent / "dados" / "transcricoes"
 MODELO = os.getenv("MODELO_CLAUDE", "claude-sonnet-5-5")
-LINHAS_POR_TRECHO = 6       # cada trecho ≈ 6 falas consecutivas
-SOBREPOSICAO = 2            # repete 2 linhas entre trechos vizinhos para não cortar ideias no meio
-TOP_K = 5                   # quantos trechos vão para o modelo
-LIMIAR_RELEVANCIA = 0.08    # abaixo disso, consideramos que o acervo não fala do assunto
 
-STOPWORDS_PT = set("""
-a à ao aos as às até com como da das de dei do dos e é ela elas ele eles em entre era eram essa esse
-esta este eu foi for foram há isso isto já la lhe mais mas me mesmo meu minha muito na nas não nem no
-nos nós o os ou para pela pelas pelo pelos por qual quando que quem se sem ser seu sua são só também
-te tem têm tinha um uma umas uns você vocês vai vou ter sobre então aí né tipo assim gente coisa
-""".split())
+# Parâmetros da busca (v2)
+LINHAS_POR_TRECHO = 3       # trechos curtos: em fala natural, um assunto dura poucas frases
+SOBREPOSICAO = 1            # repete 1 fala entre trechos vizinhos para não cortar ideias no meio
+TOP_K = 5                   # quantos trechos vão para o modelo
+LIMIAR_RELEVANCIA = 0.12    # abaixo disso, consideramos que o acervo não fala do assunto
+REESCREVER_PERGUNTA = os.getenv("REESCREVER_PERGUNTA", "0") == "1"
 
 LINHA_TS = re.compile(r"^\[(\d{1,2}:\d{2}(?::\d{2})?)\]\s*(.+)$")
 
@@ -48,6 +50,7 @@ class Trecho:
     titulo: str
     inicio: str
     texto: str
+    minutos: list[str] = field(default_factory=list)  # horários de todas as falas do trecho
 
     @property
     def citacao(self) -> str:
@@ -88,6 +91,7 @@ def carregar_episodio(caminho: Path) -> list[Trecho]:
             titulo=meta.get("titulo", caminho.stem),
             inicio=bloco[0][0],
             texto=" ".join(t for _, t in bloco),
+            minutos=[m for m, _ in bloco],
         ))
         if i + LINHAS_POR_TRECHO >= len(falas):
             break
@@ -101,14 +105,47 @@ class Acervo:
             raise FileNotFoundError(f"Nenhuma transcrição em {pasta}")
         self.trechos = [t for a in arquivos for t in carregar_episodio(a)]
         self.episodios = sorted({(t.episodio, t.titulo) for t in self.trechos})
-        stop = {_normalizar(w) for w in STOPWORDS_PT}
-        self._vet = TfidfVectorizer(preprocessor=_normalizar, stop_words=list(stop), ngram_range=(1, 2), sublinear_tf=True)
+        # Pedaços de 3 a 5 letras: "culpa" também casa com "culpada", "descanso" com "descansar"
+        self._vet = TfidfVectorizer(preprocessor=_normalizar, analyzer="char_wb", ngram_range=(3, 5), sublinear_tf=True)
         self._matriz = self._vet.fit_transform(t.texto for t in self.trechos)
 
-    def buscar(self, pergunta: str, k: int = TOP_K) -> list[tuple[Trecho, float]]:
+    def buscar(self, pergunta: str, k: int = TOP_K, limiar: float = LIMIAR_RELEVANCIA) -> list[tuple[Trecho, float]]:
         notas = cosine_similarity(self._vet.transform([pergunta]), self._matriz)[0]
         ordem = notas.argsort()[::-1][:k]
-        return [(self.trechos[i], float(notas[i])) for i in ordem if notas[i] >= LIMIAR_RELEVANCIA]
+        return [(self.trechos[i], float(notas[i])) for i in ordem if notas[i] >= limiar]
+
+
+PROMPT_REESCRITA = """Você ajuda a buscar trechos em transcrições de um podcast de conversa.
+Reescreva a pergunta abaixo como 1 ou 2 frases curtas, em português informal, com as palavras e
+situações concretas que alguém provavelmente usaria AO FALAR desse assunto em voz alta.
+Não responda à pergunta. Devolva só as frases.
+
+Exemplo:
+Pergunta: como lidar com elogio sem se justificar
+Frases: alguém falou que minha roupa é linda e eu já disse que comprei na promoção, com desconto
+
+Pergunta: {pergunta}
+Frases:"""
+
+
+def reescrever_pergunta(pergunta: str, cliente) -> str:
+    """Pede ao Claude as palavras que a pessoa usaria ao falar do assunto (chamada curta e barata)."""
+    msg = cliente.messages.create(
+        model=MODELO,
+        max_tokens=120,
+        messages=[{"role": "user", "content": PROMPT_REESCRITA.format(pergunta=pergunta)}],
+    )
+    return "".join(b.text for b in msg.content if b.type == "text").strip()
+
+
+def buscar_com_reescrita(acervo: Acervo, pergunta: str, cliente) -> list[tuple[Trecho, float]]:
+    """Busca com a pergunta original e com a reescrita; fica com a melhor nota de cada trecho."""
+    melhores: dict[int, tuple[Trecho, float]] = {}
+    for consulta in (pergunta, f"{pergunta} {reescrever_pergunta(pergunta, cliente)}"):
+        for t, nota in acervo.buscar(consulta):
+            if id(t) not in melhores or nota > melhores[id(t)][1]:
+                melhores[id(t)] = (t, nota)
+    return sorted(melhores.values(), key=lambda x: -x[1])[:TOP_K]
 
 
 SYSTEM = """Você é o assistente do acervo do podcast "Às Sábias Reflexões".
@@ -127,19 +164,26 @@ RESPOSTA_SEM_FONTE = (
 )
 
 
-def responder(acervo: Acervo, pergunta: str, cliente=None) -> dict:
+def responder(acervo: Acervo, pergunta: str, cliente=None, reescrever: bool = REESCREVER_PERGUNTA) -> dict:
     """Retorna {'resposta': str, 'fontes': list[Trecho], 'chamou_modelo': bool}."""
-    achados = acervo.buscar(pergunta)
+    def _cliente():
+        if cliente is not None:
+            return cliente
+        import anthropic
+        return anthropic.Anthropic()  # lê ANTHROPIC_API_KEY do ambiente
+
+    if reescrever:
+        cliente = _cliente()
+        achados = buscar_com_reescrita(acervo, pergunta, cliente)
+    else:
+        achados = acervo.buscar(pergunta)
     if not achados:
         return {"resposta": RESPOSTA_SEM_FONTE, "fontes": [], "chamou_modelo": False}
+    cliente = _cliente()
 
     contexto = "\n\n".join(
         f'<trecho fonte="{t.citacao}" titulo="{t.titulo}">\n{t.texto}\n</trecho>' for t, _ in achados
     )
-    if cliente is None:
-        import anthropic
-        cliente = anthropic.Anthropic()  # lê ANTHROPIC_API_KEY do ambiente
-
     msg = cliente.messages.create(
         model=MODELO,
         max_tokens=1000,

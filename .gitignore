@@ -12,6 +12,9 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Transcrições e gabaritos de episódios reais (só publicar com autorização do podcast)
+agente-acervo/dados/privado/
+
 # Áudios (pesados e com direitos de imagem/voz)
 *.mp3
 *.m4a

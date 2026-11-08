@@ -76,6 +76,19 @@ O que falhar não trava o fluxo: vira um ⚠️ na coluna *Alertas de revisão*,
 | % de peças aprovadas sem edição | — | _a medir_ |
 | Custo de API por episódio | — | _a medir_ |
 
+### Qualidade da busca do acervo
+
+Medida com [`agente-acervo/avaliar.py`](agente-acervo/avaliar.py): para cada pergunta de um gabarito, a busca acerta se um dos 3 primeiros trechos contém a resposta, ou se não devolve nada quando o assunto não está no acervo.
+
+| Versão | O que mudou | Gabarito de exemplo (9 perguntas) | 1 episódio real (11 perguntas) |
+|---|---|---|---|
+| v1 | Palavras inteiras, trechos de 6 falas | 78% | 73% |
+| v2 | Pedaços de palavras, trechos de 3 falas, limiar 0,12 | **89%** | **82%** |
+
+**Por que mudou:** no teste com um episódio real, a v1 não achava "culpa por gastar dinheiro com algo caro", porque na fala as palavras aparecem de outro jeito ("culpada", "caro demais"). Comparar pedaços de palavras e usar trechos menores resolveu boa parte desses casos.
+
+**O que ainda erra:** perguntas cujo assunto aparece só por exemplos ("elogio", quando a fala é "que roupa linda"). Para isso existe a reescrita da pergunta pelo Claude (`REESCREVER_PERGUNTA=1`), ainda a medir.
+
 ## 5. Como rodar
 
 Guia completo em [`docs/como-instalar.md`](docs/como-instalar.md). Resumo:
@@ -88,6 +101,7 @@ cd agente-acervo
 pip install -r requirements.txt
 export ANTHROPIC_API_KEY="sua-chave"
 pytest -q                 # testes rodam sem chave de API
+python avaliar.py         # mede a qualidade da busca (use --versao v1 para comparar)
 streamlit run app.py      # interface de chat
 ```
 
@@ -96,7 +110,8 @@ As transcrições em `agente-acervo/dados/transcricoes/` são **exemplos fictíc
 ## 6. Limitações e próximos passos
 
 - **Áudio acima de 25 MB** precisa ser comprimido ou dividido (limite da API de transcrição). Próximo passo: dividir automaticamente no próprio fluxo.
-- **Busca por palavras (TF-IDF)** não entende sinônimos: "ansiedade" não encontra "nervosismo". Próximo passo: embeddings, que buscam por significado.
+- **A busca (TF-IDF) não entende significado**: "ansiedade" não encontra "nervosismo". A v2 reduziu o problema com variações de palavras, e a reescrita da pergunta pelo Claude ajuda nos demais casos. Próximo passo, se não bastar: embeddings, que buscam por significado.
+- **Perguntas fora do tema às vezes passam pela busca** (ex.: "melhor time de futebol"). As notas dessas perguntas se misturam com as de perguntas válidas, então nenhum limiar separa as duas. A rede de segurança é o próprio Claude, instruído a responder que o acervo não trata do assunto; o custo é uma chamada desnecessária.
 - **Identificação de quem fala** (diarização) ainda não existe; as citações não dizem se foi o apresentador ou o convidado.
 - **Publicação**: depois da aprovação na planilha, um segundo fluxo poderia agendar os posts automaticamente.
 
