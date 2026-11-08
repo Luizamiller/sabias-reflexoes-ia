@@ -101,7 +101,15 @@ As transcrições em `agente-acervo/dados/transcricoes/` são **exemplos fictíc
 - **Publicação**: depois da aprovação na planilha, um segundo fluxo poderia agendar os posts automaticamente.
 
 ## 7. O que aprendi
+**Do lado de produto.** Como PO do podcast, eu sabia onde estava o gargalo, mas desenhar a automação me obrigou a quebrar o "trabalho pós-gravação" em peças concretas (show notes, capítulos, cortes, posts, newsletter). Só assim deu para definir um formato de saída que a equipe consegue revisar rápido, uma linha por episódio na planilha.
 
+**Confiança importa mais que velocidade.** Gerar texto com IA é a parte fácil. A parte difícil é garantir que o conteúdo não coloque na boca de uma pessoa algo que ela não disse. Por isso a maior parte do esforço foi em controle: humano aprovando antes de publicar, checagem automática das citações contra a transcrição e um campo em que o modelo pode admitir dúvida em vez de inventar.
+
+**Dar ao modelo menos trabalho para errar.** Em vez de pedir que o Claude calcule horários, o fluxo já entrega a transcrição com `[mm:ss]`. Ele só precisa copiar o que existe. Pequenas decisões de formato de entrada evitam muitos erros de saída.
+
+**Construí com IA, não só para IA.** Usei o Claude como par de programação para escrever o código e o workflow. Meu papel foi definir o problema, as regras e os critérios de qualidade, e revisar e testar o resultado.
+
+**Próximo aprendizado:** rodar com episódios reais e medir. Vou registrar aqui o que a equipe achou e o que mudou no prompt por causa disso (histórico em [`prompts/CHANGELOG.md`](prompts/CHANGELOG.md)).
 
 
 ---
