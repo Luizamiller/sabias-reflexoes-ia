@@ -102,8 +102,8 @@ As transcrições em `agente-acervo/dados/transcricoes/` são **exemplos fictíc
 
 ## 7. O que aprendi
 
-_[Escreva aqui, com suas palavras, depois de rodar com episódios reais: o que deu errado na primeira versão do prompt, o que a equipe achou, o que você mudaria.]_
+
 
 ---
 
-📫 [LinkedIn](https://www.linkedin.com/in/luiza-miller) · luizamiller.pharma@gmail.com
+📫 [LinkedIn](https://www.linkedin.com/in/luiza-miller) · lmiller.luiza@gmail.com
