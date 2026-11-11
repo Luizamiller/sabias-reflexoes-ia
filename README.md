@@ -5,6 +5,8 @@
 **Autora:** Luiza Miller · Product Owner do Às Sábias Reflexões (dez/2024–ago/2025)
 **Stack:** n8n · Claude API · OpenAI Whisper · Google Sheets · Python · Streamlit
 
+[![Testes e avaliação](https://github.com/Luizamiller/sabias-reflexoes-ia/actions/workflows/testes.yml/badge.svg)](https://github.com/Luizamiller/sabias-reflexoes-ia/actions/workflows/testes.yml)
+
 ---
 
 ## 1. O problema
