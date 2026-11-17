@@ -1,0 +1,20 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment: { POSTGRES_USER: acervo, POSTGRES_PASSWORD: acervo, POSTGRES_DB: acervo }
+    volumes: [dados:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U acervo"], interval: 5s, retries: 10 }
+  app:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://acervo:acervo@db:5432/acervo
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      N8N_TOKEN: ${N8N_TOKEN:-}
+      CORS_ORIGINS: '["http://localhost:8000"]'
+    volumes: [audios:/app/backend/storage]
+    depends_on: { db: { condition: service_healthy } }
+volumes:
+  dados:
+  audios:

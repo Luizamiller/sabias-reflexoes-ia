@@ -1,0 +1,96 @@
+@import "tailwindcss";
+@import "@fontsource-variable/literata";
+@import "@fontsource-variable/literata/wght-italic.css";
+@import "@fontsource-variable/hanken-grotesk";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Biblioteca literária: creme e ameixa, ocre para citações e tempo. */
+:root {
+  --paper: #f4efe7;
+  --surface: #fbf8f3;
+  --sunken: #ece5da;
+  --ink: #241a26;
+  --ink-2: #5d5260;
+  --ink-3: #93878d;
+  --line: #e2d9cc;
+  --line-strong: #cfc3b3;
+  --accent: #a8641c;
+  --accent-ink: #84500f;
+  --accent-wash: #f3e3cc;
+  --plum: #2a1d2e;
+  --ok: #47704f;
+  --ok-wash: #e4ede2;
+  --warn: #a15c07;
+  --warn-wash: #f8ead3;
+  --danger: #a33a2c;
+  --danger-wash: #f6e1dc;
+  color-scheme: light;
+}
+.dark {
+  --paper: #161118;
+  --surface: #1e1820;
+  --sunken: #261f29;
+  --ink: #efe7da;
+  --ink-2: #bdb1ad;
+  --ink-3: #85797f;
+  --line: #2f2733;
+  --line-strong: #40363f;
+  --accent: #d9a55b;
+  --accent-ink: #e8be80;
+  --accent-wash: #3a2a18;
+  --plum: #0f0b11;
+  --ok: #93bf98;
+  --ok-wash: #1c271d;
+  --warn: #e3b065;
+  --warn-wash: #2e2414;
+  --danger: #ec9183;
+  --danger-wash: #341b17;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-wash: var(--accent-wash);
+  --color-plum: var(--plum);
+  --color-ok: var(--ok);
+  --color-ok-wash: var(--ok-wash);
+  --color-warn: var(--warn);
+  --color-warn-wash: var(--warn-wash);
+  --color-danger: var(--danger);
+  --color-danger-wash: var(--danger-wash);
+  --font-sans: "Hanken Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Literata Variable", Georgia, serif;
+  --font-display: "Literata Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+}
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; }
+  body { @apply bg-paper text-ink font-sans; font-size: 15px; line-height: 1.55; }
+  h1, h2, h3 { font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.01em; }
+  ::selection { background: var(--accent-wash); color: var(--accent-ink); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+}
+
+@layer utilities {
+  .tnum { font-variant-numeric: tabular-nums; }
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3; }
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

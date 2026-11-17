@@ -1,0 +1,13 @@
+titulo: [EXEMPLO FICTÍCIO] Recomeçar depois dos 30
+episodio: 1
+---
+[00:00] Olá, sejam bem-vindos a mais um episódio. Este é um exemplo fictício, criado só para testar o agente do acervo.
+[00:12] Hoje a conversa é sobre recomeçar a carreira depois dos trinta anos.
+[00:25] Muita gente acha que mudar de área é jogar fora tudo o que construiu, e eu discordo disso.
+[00:41] Quando você muda, leva junto o jeito de pensar, a disciplina e a forma de resolver problemas.
+[01:02] O medo de mudar costuma ser maior antes da decisão do que depois dela.
+[01:20] Uma prática que ajuda é testar a nova área em projetos pequenos antes de pedir demissão.
+[01:45] Projetos pequenos mostram se você gosta do dia a dia, não só da ideia.
+[02:10] Outra coisa importante é conversar com quem já trabalha na área que você quer.
+[02:32] Essas conversas derrubam muitas fantasias e também muitos medos.
+[02:55] Para fechar: recomeçar não é voltar para o zero, é começar de um lugar diferente.

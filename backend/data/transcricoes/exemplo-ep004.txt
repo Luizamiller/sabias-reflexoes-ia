@@ -1,0 +1,14 @@
+titulo: [EXEMPLO FICTÍCIO] Quando alguém te elogia
+episodio: 4
+convidados: Sem convidados
+---
+[00:00] Episódio fictício número quatro, feito para testar a busca do acervo.
+[00:12] Hoje o assunto é a dificuldade de aceitar um elogio sem se diminuir.
+[00:29] Alguém fala que sua roupa é linda e você responde que comprou na promoção.
+[00:48] Ou elogiam seu trabalho e você logo aponta um defeito que ninguém viu.
+[01:07] Esse reflexo muitas vezes é medo de parecer arrogante.
+[01:28] Um exercício é responder apenas obrigado, e respirar antes de acrescentar qualquer coisa.
+[01:50] Parece pouco, mas sustentar o desconforto de receber é um treino de autoestima.
+[02:13] Também ajuda reparar em como você elogia os outros, com generosidade e sem ressalvas.
+[02:36] Quem aprende a receber reconhecimento consegue pedir aumento e negociar melhor.
+[02:58] Fica a tarefa: na próxima vez, só agradeça.

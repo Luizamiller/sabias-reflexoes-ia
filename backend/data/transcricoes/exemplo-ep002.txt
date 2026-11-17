@@ -1,0 +1,12 @@
+titulo: [EXEMPLO FICTÍCIO] Descanso não é preguiça
+episodio: 2
+---
+[00:00] Bem-vindos de volta. Mais um exemplo fictício para testar o agente do acervo.
+[00:10] O tema de hoje é descanso e a culpa que muita gente sente ao parar.
+[00:28] Vivemos como se produtividade fosse a única medida de valor de uma pessoa.
+[00:47] Descansar não é preguiça, é parte do trabalho bem feito.
+[01:05] Quem não descansa decide pior, se irrita mais e perde a criatividade.
+[01:30] Uma sugestão simples é marcar o descanso na agenda, como se fosse uma reunião.
+[01:52] Outra é perceber os sinais do corpo antes que eles virem esgotamento.
+[02:15] Também vale lembrar que descanso não precisa ser viagem cara, pode ser uma caminhada.
+[02:40] No fim, cuidar do próprio ritmo é uma forma de respeito com quem depende de você.

@@ -1,0 +1,14 @@
+titulo: [EXEMPLO FICTÍCIO] O preço da culpa
+episodio: 3
+convidados: Convidada fictícia
+---
+[00:00] Este também é um episódio fictício, criado para testar o acervo.
+[00:14] Hoje a gente fala de dinheiro e da culpa que aparece depois de uma compra.
+[00:31] Tem gente que compra um tênis caro e passa a semana inteira se justificando.
+[00:52] A culpa costuma vir de uma regra antiga, aprendida em casa, sobre o que é merecido.
+[01:15] Uma pergunta que ajuda é: essa compra cabe no meu orçamento sem me endividar?
+[01:38] Se cabe, o problema não é a compra, é a história que eu conto sobre ela.
+[02:02] Planejar um valor mensal para gastos sem justificativa tira muito peso das decisões.
+[02:25] E quando a compra foi por impulso, vale olhar o que estava sentindo naquele dia.
+[02:49] Comprar para aliviar tristeza funciona por algumas horas e depois cobra juros.
+[03:10] O convite é trocar o julgamento por curiosidade sobre os próprios hábitos.

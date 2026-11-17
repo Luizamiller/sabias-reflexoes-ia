@@ -1,0 +1,14 @@
+titulo: [EXEMPLO FICTÍCIO] Limites no trabalho
+episodio: 6
+convidados: Sem convidados
+---
+[00:00] Exemplo fictício número seis, criado para testar o agente.
+[00:11] O tema é colocar limites no trabalho sem parecer descomprometido.
+[00:27] Responder mensagem às onze da noite vira expectativa quando a gente sempre responde.
+[00:46] Limite não é grosseria, é deixar claro o que dá para entregar e quando.
+[01:06] Uma frase útil é: consigo olhar isso amanhã às nove, tudo bem?
+[01:27] Dizer não para uma tarefa é dizer sim para fazer bem as outras.
+[01:49] O corpo avisa quando o limite foi ultrapassado: insônia, irritação, dor de cabeça.
+[02:12] Quem lidera precisa dar o exemplo, porque a equipe copia o que vê.
+[02:34] Combinar horários de resposta com o time reduz a ansiedade de todo mundo.
+[02:57] No fim, proteger o próprio tempo é o que permite continuar trabalhando bem por anos.
